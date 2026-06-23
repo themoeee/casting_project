@@ -57,4 +57,5 @@ def plot_compressed_xml(file_path, pattern: str = None):
 
 # Usage:
 # plot_compressed_xml(r'C:\Users\KoltzenburgNils\OneDrive - inspire AG\Diss\93_Buehler\Versuche_Sept25/ddd_y_250905132630.xml.gz')
-plot_compressed_xml(r'C:\Users\KoltzenburgNils\OneDrive - inspire AG\Diss\93_Buehler\Versuche_Apr26/ddm_y_FliesslaengerformBuehler_2097_ok.xml.gz', pattern=None)
+#
+plot_compressed_xml(r'C:\Users\moho2\Desktop\Code\casting_project\data\ddm_y_FliesslaengerformBuehler_0080_ok.xml.gz', pattern=None)
