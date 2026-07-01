@@ -1,0 +1,64 @@
+;=====================Buhler AG  CH-9240 Uzwil==================================
+;<fpo>                DAT_VAL_SELECTION: STORE     ;Funktionsdefinition
+;<encoding>           UTF-8                        ;Encoding
+;<fileName>           dwa_y_FliesslaengerformBuehle;Dateinamen
+;<fileDate>           2025-09-05T11:29:21.135Z     ;Datei-Datum
+;<userName>                                        ;Benutzername
+;<firm>               Application / Innovation / Tr;Company name
+;<machineType>        F140                         ;Machine type
+;<machineId>          700095307                    ;Machine number
+;<softwareVersion>    rx-5.3.3.0                   ;Software version
+;<customerOrder>      Job 700095307 2021-02-17 / 00;Casting job
+;<formProg>           700095307_250905-Orion-Setup ;Die program
+;<formIdent>          Fliesslaengenform            ;Die descriptor
+;<castingIdent>       Fliesslaengerform Buehler    ;Cast part designation
+;<shiftNumber>        864294                       ;Shift number
+;<sumCycJob>          414390                       ;cycle counter total
+;<qualityAttribute>   bad                          ;quality attribute
+;<unit>               ISO Absolute                 ;Einheiten
+;<language>           de                           ;Sprache
+;<remark>                                          ;Kommentar
+;===============================================================================
+;<content>
+t Cyc Inc       = 05-09-2025 11:27:21      ;Zeitstempel: Zykluszähler erhöht [dd-MM-yyyy HH:mm:ss]
+ΣCyc tot*       = 414390                   ;Total order cycle counter [ ]
+Qua att *       = BAD                      ;quality attribute [ ]
+F L     *       = -0                       ;locking force [kN]
+l B     *       = -1                       ;biscuit thickness [mm]
+p IM R0 *       = -1                       ;metal press.: after t R0 [bar]
+p IM R1 *       = -1                       ;Metal pressure: after t R1 [bar]
+p IM R2 *       = -1                       ;Metal pressure: after t R2 [bar]
+p IMmax *       = -1                       ;max. metalpress. PI-Phase [bar]
+p M     *       = -1                       ;metal pressure (s CF) [bar]
+p N Acc *       = -1                       ;Nitrogen pressure loaded at piston accumulator [bar]
+p VacD1 *       = -1000                    ;Vacuum D1: min. vacuum pressure [mbar]
+s Ffin  *       = -1                       ;Stroke at end of die filling [mm]
+s Ibr   *       = -1                       ;Stroke for braking reached [mm]
+s Ifin  *       = -1                       ;Stroke at end of casting stroke [mm]
+s MA    *       = -1                       ;metal at gate [mm]
+s Pre   *       = -1                       ;intensification stroke [mm]
+s Tr v>p*       = -1                       ;Switch over v>p [mm]
+t Cyc   *       = -1.0                     ;cycle time [s]
+t F     *       = -1.000                   ;cavity fill time [s]
+t Ffin  *       = -1.000                   ;time till end cav. fill. [s]
+t I     *       = -1.000                   ;injection time [s]
+t Σ     *       = -1.000                   ;tot.press. build-up time [s]
+tC D cl *       = -1.00                    ;Cycle time: closing the die [s]
+tC D op *       = -1.00                    ;Cycle time: opening the die [s]
+tC DorLcl*      = -1.00                    ;Cycle time: close safety gate on the left [s]
+tC DorLop*      = -1.00                    ;Cycle time: open safety gate on the left [s]
+tC DorRcl*      = -1.00                    ;Cycle time: close safety gate on the right [s]
+tC DorRop*      = -1.00                    ;Cycle time: open safety gate on the right [s]
+tC Dos  *       = -1.00                    ;Cycle time: ladling [s]
+tC E bck*       = -1.00                    ;Cycle time: move ejector back [s]
+tC E for*       = -1.00                    ;Cycle time: move ejector forward [s]
+tC Ext  *       = -1.00                    ;Cycle time: extracting [s]
+tC F    *       = -1.00                    ;Cycle time: filling phase [s]
+tC KSP  *       = -1.00                    ;Cycle time: spraying program [s]
+tC Lub  *       = -1.00                    ;Cycle time: spraying [s]
+tC ManOp*       = -1.00                    ;Cycle time: manual operating mode [s]
+tC Sol  *       = -1.00                    ;Cycle time: pressure intensification phase + solidification [s]
+Tr v>p  *       = -1                       ;Last switch over criterion [ ]
+v CF    *       = -1.00                    ;Plunger speed at s CF [m/s]
+v MA    *       = -1.0                     ;Speed of metal at gate (at s CF) [m/s]
+ΣCyc Sft*       = -1                       ;Shift cycle counter [ ]

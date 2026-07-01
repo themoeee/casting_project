@@ -14,8 +14,7 @@ META_COLS = [
     "CycleNr", "MachineCycleNr", "Timestamp", "ChannelNr", "PartNumber",
     "Description", "SensorSerialNumber", "RangeYMin", "RangeYMax",
     "YMin", "TimeatYMin", "YMax", "TimeatYMax", "NumberOfPoints",
-    "YUnit", "Cavity", "Position", "SensorType"
-]
+    "YUnit", "Cavity", "Position", "SensorType"]
 
 
 def merge_cavity_sensor(input_path: str):

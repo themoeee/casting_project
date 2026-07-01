@@ -32,6 +32,17 @@ The pipeline should still remain flexible enough to also predict scalar target v
 - elongation at failure
 - other derived material properties
 
+## Identifier
+
+Each individual sample should be uniquely identifiable through its machine_cycle_no.
+For each sample, we should know:
+-- Machine_cycle_no  -> identifier through all datasets
+-- Parameterset_no (with corresponding parameter values) -> excel
+-- type_1st_phase   -> excel
+-- datum    -> excel, cavity sensor csv, ddm xml
+-- cavity sensor data   -> cavity sensor csv: file_cycle_number need to be 
+-- machine data (ddm) -> ddm xml
+
 ## Main Modeling Idea
 
 The core task is to learn a mapping of the form:
@@ -102,7 +113,7 @@ This would allow the model to predict the spatial variation of material properti
 
 ## Sensor and Time-Series Data
 
-The full dataset may include several time-dependent signals, for example:
+The full dataset includes several time-dependent signals, for example:
 
 - casting curve
 - pressure curve
