@@ -3,11 +3,25 @@
 # data lies in data folder
 
 from pathlib import Path
-import pandas as pd
-from pathlib import Path
-import shutil
 import re
+import shutil
+
 import pandas as pd
+
+try:
+    from data_processing.build_master_sample_table import (
+        DEFAULT_EXCEL_PATH,
+        DEFAULT_SHEET_NAME,
+        _extract_trial_folder,
+        read_master_excel,
+    )
+except ModuleNotFoundError:
+    from build_master_sample_table import (
+        DEFAULT_EXCEL_PATH,
+        DEFAULT_SHEET_NAME,
+        _extract_trial_folder,
+        read_master_excel,
+    )
 
 
 META_COLS = [
@@ -15,6 +29,12 @@ META_COLS = [
     "Description", "SensorSerialNumber", "RangeYMin", "RangeYMax",
     "YMin", "TimeatYMin", "YMax", "TimeatYMax", "NumberOfPoints",
     "YUnit", "Cavity", "Position", "SensorType"]
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_INPUT_PATH = PROJECT_ROOT / "data" / "raw" / "cavity_sensors"
+DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "cavity_sensors_long"
+DEFAULT_MERGED_OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "parquet" / "cavity_sensor_data.parquet"
+DEFAULT_REMOVED_CYCLES_CSV = PROJECT_ROOT / "data" / "processed" / "csv" / "removed_cavity_sensor_cycles.csv"
 
 
 def list_cavity_sensor_data(input_path: str):
@@ -35,6 +55,99 @@ def list_cavity_sensor_data(input_path: str):
 def _safe_name(name: str) -> str:
     '''Used to create safe file names for parquet files (e.g. avoid special characters)'''
     return re.sub(r"[^a-zA-Z0-9_-]+", "_", name)
+
+def build_cavity_casting_part_mapping(
+    excel_path: str | Path = DEFAULT_EXCEL_PATH,
+    sheet_name: str = DEFAULT_SHEET_NAME,
+) -> pd.DataFrame:
+    """Build the unique cavity-sensor key to casting part label mapping."""
+
+    master = read_master_excel(excel_path=excel_path, sheet_name=sheet_name)
+    mapping = master[
+        [
+            "cavity_sensor_trial_folder",
+            "cavity_sensor_file_cycle_nr",
+            "casting_part_label",
+        ]
+    ].dropna(subset=["cavity_sensor_trial_folder", "cavity_sensor_file_cycle_nr"]).copy()
+    mapping = mapping.dropna(subset=["casting_part_label"]).copy()
+
+    mapping = mapping.rename(columns={"cavity_sensor_trial_folder": "trial_folder"})
+    mapping["trial_folder"] = mapping["trial_folder"].astype("string")
+    mapping["cavity_sensor_file_cycle_nr"] = (
+        pd.to_numeric(mapping["cavity_sensor_file_cycle_nr"], errors="coerce")
+        .round()
+        .astype("Int64")
+    )
+
+    duplicate_keys = mapping.duplicated(
+        ["trial_folder", "cavity_sensor_file_cycle_nr"],
+        keep=False,
+    )
+    if duplicate_keys.any():
+        duplicates = mapping.loc[
+            duplicate_keys,
+            ["trial_folder", "cavity_sensor_file_cycle_nr", "casting_part_label"],
+        ].sort_values(["trial_folder", "cavity_sensor_file_cycle_nr"])
+        raise ValueError(
+            "Master Excel contains non-unique cavity sensor join keys:\n"
+            f"{duplicates.to_string(index=False)}"
+        )
+
+    return mapping
+
+def attach_casting_part_labels(
+    long_df: pd.DataFrame,
+    mapping: pd.DataFrame,
+    csv_file: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Attach casting_part_label and return irrelevant cycles removed from this CSV."""
+
+    long_df = long_df.copy()
+    long_df["trial_folder"] = long_df["trial_folder"].astype("string")
+    long_df["cavity_sensor_file_cycle_nr"] = (
+        pd.to_numeric(long_df["cavity_sensor_file_cycle_nr"], errors="coerce")
+        .round()
+        .astype("Int64")
+    )
+
+    labeled = long_df.merge(
+        mapping,
+        on=["trial_folder", "cavity_sensor_file_cycle_nr"],
+        how="left",
+        validate="many_to_one",
+    )
+
+    removed = labeled.loc[
+        labeled["casting_part_label"].isna(),
+        ["trial_folder", "cavity_sensor_file_cycle_nr"],
+    ].drop_duplicates()
+    labeled = labeled.dropna(subset=["casting_part_label"]).copy()
+
+    if not removed.empty:
+        print(f"  - Removed {len(removed)} cycles without relevant master casting_part_label from {csv_file.name}")
+
+    return labeled, removed
+
+def validate_all_master_parts_have_sensor_data(
+    mapping: pd.DataFrame,
+    merged: pd.DataFrame,
+) -> None:
+    """Verify every relevant master casting_part_label has cavity sensor data."""
+
+    expected = mapping[
+        ["trial_folder", "cavity_sensor_file_cycle_nr", "casting_part_label"]
+    ].drop_duplicates()
+    found_labels = set(merged["casting_part_label"].dropna().astype("Int64").tolist())
+    missing = expected[
+        ~expected["casting_part_label"].astype("Int64").isin(found_labels)
+    ]
+
+    if not missing.empty:
+        raise ValueError(
+            "Some master casting_part_labels have no matching cavity sensor data:\n"
+            f"{missing.to_string(index=False)}"
+        )
 
 def read_cavity_sensor_csv(csv_file: Path, input_root: Path, source_file_id: int) -> pd.DataFrame:
     """Read a cavity sensor CSV file and return a long-format DataFrame with metadata."""
@@ -114,7 +227,7 @@ def read_cavity_sensor_csv(csv_file: Path, input_root: Path, source_file_id: int
     df["source_file_id"] = source_file_id
     df["source_file"] = csv_file.name
     df["source_rel_path"] = str(csv_file.relative_to(input_root))
-    df["trial_folder"] = csv_file.parent.parent.name
+    df["trial_folder"] = _extract_trial_folder(csv_file.parent.parent.name)
 
     # important later: this is only unique within one cavity sensor file/day
     df["cavity_sensor_file_cycle_nr"] = df["CycleNr"]
@@ -155,6 +268,10 @@ def read_cavity_sensor_csv(csv_file: Path, input_root: Path, source_file_id: int
 def merge_cavity_sensors_to_parquet(
     input_path: str | Path,
     output_path: str | Path | None = None,
+    merged_output_path: str | Path | None = None,
+    removed_cycles_csv: str | Path = DEFAULT_REMOVED_CYCLES_CSV,
+    excel_path: str | Path = DEFAULT_EXCEL_PATH,
+    sheet_name: str = DEFAULT_SHEET_NAME,
     pattern: str = "*/06_Cavity_Sensors/*.csv",
     overwrite: bool = True,
 ) -> None:
@@ -164,22 +281,37 @@ def merge_cavity_sensors_to_parquet(
     input_path = Path(input_path)
 
     if output_path is None:
-        print("No output path provided. Using default: 'processed/cavity_sensors_long' in the input path.")
-        output_path = input_path.parent / "processed" / "cavity_sensors_long"
+        print(f"No output path provided. Using default: {DEFAULT_OUTPUT_PATH}")
+        output_path = DEFAULT_OUTPUT_PATH
     else:
         output_path = Path(output_path)
+
+    if merged_output_path is None:
+        merged_output_path = DEFAULT_MERGED_OUTPUT_PATH
+    else:
+        merged_output_path = Path(merged_output_path)
+    removed_cycles_csv = Path(removed_cycles_csv)
 
     if output_path.exists() and overwrite:
         shutil.rmtree(output_path)
 
     output_path.mkdir(parents=True, exist_ok=True)
+    merged_output_path.parent.mkdir(parents=True, exist_ok=True)
+    removed_cycles_csv.parent.mkdir(parents=True, exist_ok=True)
 
     csv_files = sorted(input_path.glob(pattern))
 
     if not csv_files:
         raise FileNotFoundError(f"No CSV files found with pattern: {input_path / pattern}")
 
+    mapping = build_cavity_casting_part_mapping(
+        excel_path=excel_path,
+        sheet_name=sheet_name,
+    )
+
     manifest_rows = []
+    long_tables = []
+    removed_cycles = []
 
     for i, csv_file in enumerate(csv_files):
         print(f"\n[{i + 1}/{len(csv_files)}] Processing {csv_file.name}")
@@ -189,6 +321,14 @@ def merge_cavity_sensors_to_parquet(
             input_root=input_path,
             source_file_id=i,
         )
+        raw_long_rows = len(long_df)
+        long_df, removed = attach_casting_part_labels(
+            long_df=long_df,
+            mapping=mapping,
+            csv_file=csv_file,
+        )
+        if not removed.empty:
+            removed_cycles.append(removed)
         print(f"  - Read {len(long_df)} rows from {csv_file.name}")
         print(f"  - Time range: {long_df['time_s'].min()}s to {long_df['time_s'].max()}s")
 
@@ -196,13 +336,16 @@ def merge_cavity_sensors_to_parquet(
         part_path = output_path / part_name
 
         long_df.to_parquet(part_path, index=False)
+        long_tables.append(long_df)
 
         manifest_rows.append({
             "source_file_id": i,
             "source_file": csv_file.name,
             "source_rel_path": str(csv_file.relative_to(input_path)),
-            "trial_folder": csv_file.parent.parent.name,
+            "trial_folder": _extract_trial_folder(csv_file.parent.parent.name),
+            "n_rows_raw_long": raw_long_rows,
             "n_rows_long": len(long_df),
+            "n_casting_part_labels": long_df["casting_part_label"].nunique(),
             "descriptions": sorted(long_df["Description"].dropna().unique().tolist()),
             "min_cycle": long_df["CycleNr"].min(),
             "max_cycle": long_df["CycleNr"].max(),
@@ -214,18 +357,36 @@ def merge_cavity_sensors_to_parquet(
     manifest_path = output_path.parent / "cavity_sensors_manifest.parquet"
     manifest.to_parquet(manifest_path, index=False)
 
+    if removed_cycles:
+        removed_manifest = pd.concat(removed_cycles, ignore_index=True).drop_duplicates()
+    else:
+        removed_manifest = pd.DataFrame(columns=["trial_folder", "cavity_sensor_file_cycle_nr"])
+    removed_manifest = removed_manifest.sort_values(
+        ["trial_folder", "cavity_sensor_file_cycle_nr"],
+        ignore_index=True,
+    )
+    removed_manifest.to_csv(removed_cycles_csv, index=False)
+
+    merged = pd.concat(long_tables, ignore_index=True)
+    validate_all_master_parts_have_sensor_data(mapping=mapping, merged=merged)
+    merged.to_parquet(merged_output_path, index=False)
+
     print(f"\nSaved cavity sensor parquet dataset to: {output_path}")
+    print(f"Saved merged cavity sensor data to: {merged_output_path}")
     print(f"Saved manifest to: {manifest_path}")
+    print(f"Saved removed cavity sensor cycles to: {removed_cycles_csv}")
    
 
 if __name__ == "__main__":
 
-    data_path = Path(__file__).resolve().parent.parent / "data" / "cavity_sensors"
+    data_path = DEFAULT_INPUT_PATH
 
 
     list_cavity_sensor_data(data_path)
 
     merge_cavity_sensors_to_parquet(
         input_path=data_path,
-        output_path=data_path.parent / "processed" / "cavity_sensors_long",
+        output_path=DEFAULT_OUTPUT_PATH,
+        merged_output_path=DEFAULT_MERGED_OUTPUT_PATH,
+        removed_cycles_csv=DEFAULT_REMOVED_CYCLES_CSV,
     )

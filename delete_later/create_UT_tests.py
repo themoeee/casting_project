@@ -20,6 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXCEL_PATH = (
     PROJECT_ROOT
     / "data"
+    / "raw"
     / "master_excel"
     / "250929_Analysis_Casting_Trials_EpR_corrected260129_extend260402.xlsx"
 )

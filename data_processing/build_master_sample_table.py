@@ -19,15 +19,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXCEL_PATH = (
     PROJECT_ROOT
     / "data"
+    / "raw"
     / "master_excel"
     / "250929_Analysis_Casting_Trials_EpR_corrected260129_extend260402.xlsx"
 )
 DEFAULT_SHEET_NAME = "CSV EXPORT CLEANUP"
-DEFAULT_OUTPUT_PARQUET = PROJECT_ROOT / "data" / "processed" / "master_sample_table.parquet"
-DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "data" / "processed" / "master_sample_table.csv"
+DEFAULT_OUTPUT_PARQUET = PROJECT_ROOT / "data" / "processed" / "parquet" / "master_sample_table.parquet"
+DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "data" / "processed" / "csv" / "master_sample_table.csv"
 DEFAULT_VALIDATION_DIR = PROJECT_ROOT / "data" / "processed" / "master_sample_validation"
-DEFAULT_CAVITY_ROOT = PROJECT_ROOT / "data" / "cavity_sensors"
-DEFAULT_DDM_ROOT = PROJECT_ROOT / "data" / "ddm"
+DEFAULT_CAVITY_ROOT = PROJECT_ROOT / "data" / "raw" / "cavity_sensors"
+DEFAULT_DDM_ROOT = PROJECT_ROOT / "data" / "raw" / "ddm"
 
 
 COLUMN_RENAMES = {
@@ -490,9 +491,12 @@ def build_master_sample_table(
     validation_summary, validation_issues = validate_master_sample_table(sample_table)
     validation_dir = Path(validation_dir)
     validation_dir.mkdir(parents=True, exist_ok=True)
-    validation_summary_path = validation_dir / "master_sample_validation_summary.csv"
+    validation_summary_path = validation_dir / "master_sample_validation_summary.txt"
     validation_issues_path = validation_dir / "master_sample_validation_issues.csv"
-    validation_summary.to_csv(validation_summary_path, index=False)
+    validation_summary_path.write_text(
+        validation_summary.to_string(index=False),
+        encoding="utf-8",
+    )
     validation_issues.to_csv(validation_issues_path, index=False)
 
     return BuildOutputs(
