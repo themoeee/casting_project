@@ -1,3 +1,5 @@
 pyarrow
 pandas
 matplotlib
+fastparquet
+openpyxl

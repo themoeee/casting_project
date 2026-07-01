@@ -651,11 +651,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         sys.stdout.reconfigure(encoding="utf-8")
 
     default_file = (
-        Path(__file__).resolve().parent
+        Path(__file__).resolve().parent.parent
         / "data"
-        / "250909"
-        / "02_Machine data"
-        / "ddm_y_FliesslaengerformBuehler_0080_ok.xml.gz"
+        / "ddm"
+        / "ddm_y_FliesslaengerformBuehler_0003_ok.xml.gz"
     )
     parser = argparse.ArgumentParser(description="Inspect curves in a Buehler XML file.")
     parser.add_argument(

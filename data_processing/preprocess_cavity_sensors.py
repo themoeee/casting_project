@@ -17,10 +17,8 @@ META_COLS = [
     "YUnit", "Cavity", "Position", "SensorType"]
 
 
-def merge_cavity_sensor(input_path: str):
-    '''This function merges all cavity sensor files from different days into one csv file and saves it'''
-
-    target_path = Path(__file__).resolve().parent.parent / "data"    
+def list_cavity_sensor_data(input_path: str):
+    '''This function lists all available cavity sensor CSV files in the given input path.'''
     
     csv_files = []
 
@@ -32,8 +30,8 @@ def merge_cavity_sensor(input_path: str):
         })
 
     print(f"Found {len(csv_files)} CSV files")
-    print(f"\n Found CSV files {[file['trial_folder'] for file in csv_files]}")  # This line seems to have an error; trial_folder is not defined in this context
-    
+    print(f"\n Found CSV files {[file['trial_folder'] + '/' + file['filename'] for file in csv_files]}")  
+
 def _safe_name(name: str) -> str:
     '''Used to create safe file names for parquet files (e.g. avoid special characters)'''
     return re.sub(r"[^a-zA-Z0-9_-]+", "_", name)
@@ -154,7 +152,6 @@ def read_cavity_sensor_csv(csv_file: Path, input_root: Path, source_file_id: int
 
     return long_df
 
-
 def merge_cavity_sensors_to_parquet(
     input_path: str | Path,
     output_path: str | Path | None = None,
@@ -167,6 +164,7 @@ def merge_cavity_sensors_to_parquet(
     input_path = Path(input_path)
 
     if output_path is None:
+        print("No output path provided. Using default: 'processed/cavity_sensors_long' in the input path.")
         output_path = input_path.parent / "processed" / "cavity_sensors_long"
     else:
         output_path = Path(output_path)
@@ -225,7 +223,7 @@ if __name__ == "__main__":
     data_path = Path(__file__).resolve().parent.parent / "data" / "cavity_sensors"
 
 
-    merge_cavity_sensor(data_path)
+    list_cavity_sensor_data(data_path)
 
     merge_cavity_sensors_to_parquet(
         input_path=data_path,
