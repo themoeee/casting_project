@@ -44,23 +44,70 @@ def read_cavity_sensor_csv(csv_file: Path, input_root: Path, source_file_id: int
 
     df = pd.read_csv(csv_file, sep=";", low_memory=False)
 
+    # Check unnamed columns before dropping them
+    unnamed_cols = [col for col in df.columns if str(col).startswith("Unnamed")]
+
+    if unnamed_cols:
+        for col in unnamed_cols:
+            non_empty = df[col].dropna()
+
+            if len(non_empty) > 0:
+                print(f"\nWARNING: Unnamed column {col} in {csv_file.name} contains data!")
+                print(non_empty.head(10))
+                raise ValueError(f"Unnamed column {col} is not empty. Do not drop automatically.")
+
+        print(f"Dropping empty unnamed columns in {csv_file.name}: {unnamed_cols}")
+        df = df.drop(columns=unnamed_cols)
+    #invalid_local_indices = [i for i, t in enumerate(time_values) if pd.isna(t)]
+
+    # if invalid_local_indices:
+    #     print(f"\nInvalid time columns in {csv_file.name}:")
+
+    #     for local_idx in invalid_local_indices:
+    #         original_col = time_cols[local_idx]
+    #         global_idx = df.columns.get_loc(original_col)
+
+    #         print("\n--- Invalid column diagnosis ---")
+    #         print(f"Original column name: {repr(original_col)}")
+    #         print(f"Local index in time_cols: {local_idx}")
+    #         print(f"Global index in df.columns: {global_idx}")
+
+    #         print("Previous 5 time columns:")
+    #         print(time_cols[max(0, local_idx - 5):local_idx])
+
+    #         print("Next 5 time columns:")
+    #         print(time_cols[local_idx + 1:local_idx + 6])
+
+    #         print("First 10 values in invalid column:")
+    #         print(df[original_col].head(10))
+
+    #         print("Non-NaN values in invalid column:")
+    #         print(df[original_col].dropna().head(10))
+
+    #     raise ValueError("Invalid time column found.")
+
+    #print("Amount of NaN values in time_values: ", time_values.isna().sum())
+
+    
     missing = [col for col in META_COLS if col not in df.columns]
     if missing:
         raise ValueError(f"{csv_file} is missing metadata columns: {missing}")
-
+    
     time_cols = [col for col in df.columns if col not in META_COLS] # All collumns not containing metadata are time columns
 
     # time is stored in the column names after the metadata columns
     time_values = pd.to_numeric(
         pd.Series(time_cols).astype(str).str.replace(",", ".", regex=False),
-        errors="raise" #rather than coerce
+        errors="coerce" 
     )
 
-    valid_time_cols = [col for col, t in zip(time_cols, time_values) if pd.notna(t)]
+    valid_time_cols = [col for col, t in zip(time_cols, time_values) if pd.notna(t)] 
     if len(valid_time_cols) != len(time_cols):
         invalid = [col for col, t in zip(time_cols, time_values) if pd.isna(t)]
         print(f"Warning: ignored invalid time columns in {csv_file.name}: {invalid}")
-    #    print(f"These were the columns preceding the invalid time columns: ")
+        invalid_index = [df.columns.get_loc(col) for col in invalid]
+        print(f"  - Invalid time columns at indices: {invalid_index}")
+      #  print(f"The values before conversion issue were: {col[]}")
        
 
 
@@ -175,11 +222,11 @@ def merge_cavity_sensors_to_parquet(
    
 
 if __name__ == "__main__":
-    data_path = Path("C:/Users/moho2/Desktop/Code/casting_project/data")
+
+    data_path = Path(__file__).resolve().parent.parent / "data" / "cavity_sensors"
+
 
     merge_cavity_sensor(data_path)
-
-    data_path = Path(__file__).resolve().parent.parent / "data"
 
     merge_cavity_sensors_to_parquet(
         input_path=data_path,
