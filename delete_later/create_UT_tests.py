@@ -25,8 +25,8 @@ DEFAULT_EXCEL_PATH = (
     / "250929_Analysis_Casting_Trials_EpR_corrected260129_extend260402.xlsx"
 )
 DEFAULT_SHEET_NAME = "or2509 Parameter Sets"
-DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "data" / "processed" / "fake_ut_test_results.csv"
-DEFAULT_OUTPUT_PARQUET = PROJECT_ROOT / "data" / "processed" / "fake_ut_test_results.parquet"
+DEFAULT_OUTPUT_CSV = PROJECT_ROOT / "data" / "raw" / "ut_tests" / "fake_ut_test_results.csv"
+DEFAULT_OUTPUT_PARQUET = PROJECT_ROOT / "data" / "raw" / "ut_tests" / "fake_ut_test_results.parquet"
 
 SAMPLE_POSITIONS = range(1, 28)
 PART_NUMBERS = range(1, 4)

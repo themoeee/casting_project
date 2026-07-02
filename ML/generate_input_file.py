@@ -22,7 +22,7 @@ def get_ddm_machine_data(input_path):
     '''This function reads all DDM machine data XML files from the given input path and returns a list of dataframes.'''
     import pandas as pd
     from pathlib import Path
-    from data_processing.read_xml_file import load_xml_data, xml_to_long_dataframe
+    from data_processing.utils.read_xml_file import load_xml_data, xml_to_long_dataframe
 
     input_path = Path(input_path)
     xml_files = list(input_path.glob("**/*.xml*"))

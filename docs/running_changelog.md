@@ -68,6 +68,45 @@ What the project does not yet provide as a finished end-to-end workflow:
 
 ## Timeline
 
+## 2026-07-01 #2 - ML input readiness check refined
+
+### What happened
+
+- Reworked `data_processing/check_processed_data.py` into a real ML-readiness gate.
+- The check now uses the normalized master Excel as the reference list of relevant `casting_part_label` values.
+- Cavity-sensor data, DDM machine data, and UT test data are checked for coverage against all relevant master casting parts.
+- The script reads the actual processed data first and uses manifest files only as secondary consistency checks.
+- Added a compact human-readable report that says whether the processed data can be fed into ML models.
+
+### What the project can do now
+
+- Report how many relevant master casting parts are complete across cavity sensors, DDM, and UT outputs.
+- List missing datasets per `casting_part_label` when the ML inputs are incomplete.
+- Detect common processed-data problems such as missing files, missing required columns, empty tables, and stale manifests.
+
+### Open / next step
+
+- Run the check locally after regenerating all processed outputs.
+- Replace the current fake UT output path once the real UT preprocessing table is introduced.
+
+### Commit / files
+
+- Commit: not committed yet
+- Important: `data_processing/check_processed_data.py`, `docs/running_changelog.md`
+
+## 2026-07-01 - Processed data tables aligned for ML inputs
+
+### What happened
+
+- Updated master, cavity-sensor, and DDM preprocessing toward four clean processed data sources.
+- Added `casting_part_label` joins for cavity and DDM data, filtering irrelevant cycles into removed-cycle CSV logs.
+- Added processed-data check helpers that inspect real processed tables and use manifests only as consistency cross-checks.
+
+### Commit / files
+
+- Commit: not committed yet
+- Important: `data_processing/build_master_sample_table.py`, `data_processing/preprocess_cavity_sensors.py`, `data_processing/preprocess_ddm.py`, `data_processing/check_processed_data.py`
+
 ## 2026-06-26 - Running changelog created
 
 ### What happened
